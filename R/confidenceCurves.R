@@ -594,7 +594,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   return(return.results)
 }
 
-testConfidenceCurves <- function(directory='test'){
+testConfidenceCurves <- function(directory='./test'){
   df <- data.frame()
   for (i in c(-0.02, -0.1)){
     for (j in seq(26, 30, by=2)){
