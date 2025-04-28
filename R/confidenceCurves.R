@@ -32,7 +32,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                                  show='BENEFIT', pval='TWO-SIDED',
                                  min.effect=log(1.05),
                                  dir.benefit=0,
-                                 plot=FALSE,
+                                 save.plot=FALSE,
+                                 return.plot=FALSE,
                                  tag=""){
 
 
@@ -508,7 +509,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   # format z score label
   label.z = data.frame(
     x = theta.estimator - 4*x.ticks, # set location automatically relative to theta estimator
-    y = (dnorm(theta.estimator - 4*x.ticks, sd=standard.error)/4),
+    y = (dnorm(0, sd=standard.error)/2),
     label = paste("z = ", round(qnorm(conf.benefit), digits=2), sep='')
   )
 
@@ -558,7 +559,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   # SAVE PLOTS
   ############
 
-  if(plot=='TRUE'){
+  if(save.plot=='TRUE'){
     # set the directory
     dir.create(file.path(directory), showWarnings = FALSE, recursive = TRUE)
     # setwd(file.path(directory))
@@ -590,8 +591,11 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                         ninetyfive.percent.CI.upper=cc.max
 
   )
-
-  return(return.results)
+  if (return.plot == TRUE){
+    return(list(text=return.results, cdf=plot1, pdf=plot2, cc=plot3, null=plot4))
+  } else{
+    return(return.results)
+  }
 }
 
 testConfidenceCurves <- function(directory='./test'){
@@ -607,10 +611,12 @@ testConfidenceCurves <- function(directory='./test'){
                                        directory = directory,
                                        pval = 'ONE-SIDED',
                                        show='BENEFIT',
-                                       plot='TRUE',
+                                       save.plot=FALSE,
+                                       return.plot=TRUE,
                                        tag=paste("delta",i,"treatresp",j,"ctrlresp", k, sep="" )
       )
-      df <- rbind(df, data.frame(list.out))
+      df <- rbind(df, data.frame(list.out$text))
+      print(list.out$cdf)
       }
     }
   }
