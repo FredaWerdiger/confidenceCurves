@@ -13,7 +13,8 @@
 # num.resp.ctrl = number of control subject that responded
 # num.resp.trmt = number of treatment subjects that responded
 # sample.size = enter if didn't supply num.ctrl and num.trmt
-# dir.benefit: 0 = benefit is less that zero, 1 = benefit is more than zero
+# neutral.effect = what represents a neutral effect (1, or 0)
+# dir.benefit: 0 = lower is better, 1 = higher is better
 # directory: existing location of where you want to save the image (end with /)
 # show: Show 'BENEFIT' (default) or 'EQUIV' (equivalence) on graph
 
@@ -31,6 +32,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                                  directory="",
                                  show='BENEFIT', pval='TWO-SIDED',
                                  min.effect=log(1.05),
+                                 neutral.effect=0,
                                  dir.benefit=0,
                                  save.plot=FALSE,
                                  return.plot=FALSE,
@@ -234,12 +236,13 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     }
   }
 
-  # depending on direction of benefit, compute:
+  # compute confidence
+  # depending on direction of benefit and the position of neutral effect
   if (dir.benefit == 0){
-    conf.benefit = int_density(cd, -Inf, 0)
+    conf.benefit = int_density(cd, -Inf, neutral.effect)
     conf.lmb = int_density(cd, -min.effect, Inf)
   } else {
-    conf.benefit = int_density(cd, 0, Inf)
+    conf.benefit = int_density(cd, neutral.effect, Inf)
     conf.lmb = int_density(cd, -Inf, min.effect)}
 
   # for neat display
@@ -383,8 +386,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     dnorm_limit = function(x) {
       y = cd(x)
       if (dir.benefit==0){
-        y[x > 0] = NA
-      } else {y[x < 0] = NA}
+        y[x > neutral.effect] = NA
+      } else {y[x < neutral.effect] = NA}
       return(y)
     }
     label = paste("Conf(BENEFIT)=","\n", conf.benefit.disp,"%", sep='')
@@ -408,7 +411,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
 
   # moved dashed line accordingly
   if ((show == "BENEFIT") | (show == "EQUIV")){
-    dashed.line.intercept=0
+    dashed.line.intercept=neutral.effect
   } else if (show == "LMB"){
     dashed.line.intercept=min.effect
   }
@@ -442,7 +445,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     ggplot2::coord_cartesian(clip = "off")
 
   # ----  ---- ----
-  # CC
+  # CC / p-val function
 
   # 95% CI label
   label.loc = data.frame(
@@ -613,10 +616,12 @@ testConfidenceCurves <- function(directory='./test'){
                                        show='BENEFIT',
                                        save.plot=FALSE,
                                        return.plot=TRUE,
+                                       dir.benefit = 0,
+                                       neutral.effect=0,
                                        tag=paste("delta",i,"treatresp",j,"ctrlresp", k, sep="" )
       )
       df <- rbind(df, data.frame(list.out$text))
-      print(list.out$cdf)
+      print(list.out$pdf)
       }
     }
   }
