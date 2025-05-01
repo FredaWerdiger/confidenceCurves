@@ -62,37 +62,30 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     theta.estimator = odds.ratio
     }
 
-  # if sample size was not provided, and can't be derived, produce error
-  if (is.null(sample.size)){
-    if (!is.null(num.ctrl) & !is.null(num.trmt)){
-      sample.size =  num.ctrl + num.trmt
-    } else {stop(paste("Sample size information is missing", "\n",
-                       "Either specify explicity with sample.size arg or via num.ctrl/num.trmt args.", sep=''))}
-  }
-
-  # rename sample size
-  n = sample.size
-
   ################
   # STANDARD ERROR
   ################
 
-  # check inputs
-  if (is.null(treat.var)){
-    # if variance is not supplied
-    if (!is.null(standard.error)){
-      # check if standard error is supplied
-      treat.var = (standard.error ^ 2) * n
-    } else if (!is.null(confidence.upper) & !is.null(confidence.lower)){
+  # check inputs for standard error
+
+  if (is.null(standard.error)){
+    if (!is.null(confidence.upper) & !is.null(confidence.lower)){
       # else check if confidence interval was supplied
       standard.error = (confidence.upper - confidence.lower) / 3.92
+    } else if (!is.null(treat.var)){
+      if (is.null(sample.size)){
+        if (!is.null(num.ctrl) & !is.null(num.trmt)){
+          sample.size =  num.ctrl + num.trmt
+        } else{
+          stop("To get standard error from variance, specify sample size.")
+        }
+      } else{
+        standard.error = sqrt(treat.var / sample.size)
+      }
+    } else{
+      stop("Error estimation not supplied.")
     }
-  } else {
-    # if variance is supplied
-    standard.error = sqrt(treat.var / n)
   }
-
-
   #########################
   # CONFIDENCE DISTRIBUTION
   #########################
