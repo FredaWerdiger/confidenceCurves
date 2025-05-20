@@ -1,6 +1,4 @@
-if (!require(DescTools)) install.packages("DescTools")
-if (!require(ggplot2)) install.packages("ggplot2")
-if (!require(cowplot)) install.packages("cowplot")
+
 # The equations in this function are derived from
 # Marschner, I. "Confidence distributions for treatment effects in Clinical Trials:
 # Posteriors without Priors", Statistics in Medicine, 2024;43:1271-1289.
