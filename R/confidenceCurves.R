@@ -21,6 +21,7 @@
 
 
 makeConfidenceCurves <- function(theta.estimator=NULL,
+                                 estimator.type=NULL,
                                  treat.var=NULL,
                                  standard.error=NULL,
                                  confidence.upper=NULL,
@@ -39,29 +40,47 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                                  return.plot=FALSE,
                                  tag=""){
 
-
-    if (is.null(theta.estimator)){
-    a = num.resp.ctrl
-    b = num.resp.trmt
-    c = num.ctrl - num.resp.ctrl
-    d = num.trmt - num.resp.trmt
-    n = num.ctrl + num.trmt
-
-    # ##############################################
-    # CALCUATE ODDS RATIO/TREATMENT EFFECT ESTIMATOR
-    # ##############################################
-
-    odds.ratio = log((a*d)/(b*c))
-
-    # standard error after Marschner (2024)
-    standard.error = sqrt(((1/a) + (1/b) + (1/c) + (1/d)))
-
-    # variance
-    treat.var = (standard.error**2) * n
-
-    # rename odds ratio as the treatment effect estimator
-    theta.estimator = odds.ratio
+  if (is.null(theta.estimator)){
+    if (is.null(sample.size) &
+        !is.null(a) & !is.null(b)){
+      sample.size = a + b
+    } else {
+      stop("To get standard error from variance, specify sample size.")
     }
+    # ##############################################
+    # CALCUATE TREATMENT EFFECT ESTIMATOR
+    # ##############################################
+
+    if (!typeof(estimator.type) == "character"){
+      stop("Enter estimator type (odds ratio, risk difference)")
+    } else if (tolower(estimator.type) == 'odds ratio'|
+          grepl("odds",tolower(estimator.type))){
+      estimator.type = "Log Odds Ratio"
+      a = num.resp.ctrl
+      b = num.resp.trmt
+      c = num.ctrl - num.resp.ctrl
+      d = num.trmt - num.resp.trmt
+      theta.estimator = log((a*d)/(b*c))
+      # standard error after Marschner (2024)
+      standard.error = sqrt(((1/a) + (1/b) + (1/c) + (1/d)))
+      # variance
+      treat.var = (standard.error**2) * sample.size
+      } else if (to.lower(estimator.type) == "risk difference" |
+                 (grepl("risk", tolower(estimator.type)) &
+                  grepl("diff", tolower(estimator.type)))){
+        estimator.type = "Risk Difference"
+        crisk = num.resp.ctrl/num.ctrl
+        trisk = num.resp.trmt/num.trmt
+
+        theta.estimator = trisk - crisk
+
+        # variance after Marschner et al
+        var = (crisk * (1-crisk) +
+                 (crisk+risk_diff)*(1 - crisk - risk_diff))/2
+      } else {
+      stop("Enter risk difference or odds ratio for estimator type.")
+      }
+  }
 
   ################
   # STANDARD ERROR
