@@ -42,8 +42,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
 
   if (is.null(theta.estimator)){
     if (is.null(sample.size) &
-        !is.null(a) & !is.null(b)){
-      sample.size = a + b
+        !is.null(num.ctrl) & !is.null(num.trmt)){
+      sample.size =  num.ctrl + num.trmt
     } else {
       stop("To get standard error from variance, specify sample size.")
     }
@@ -614,23 +614,32 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   }
 }
 
-testConfidenceCurves <- function(directory='./test'){
+testConfidenceCurves <- function(num.ctrl=50,
+                                 num.trmt=50,
+                                 vary.ctrl=seq(16,20, by=2),
+                                 vary.trmt=seq(26, 30, by=2),
+                                 vary.lmb = c(-0.05, -0.1),
+                                 estimate.type = 'odds ratio',
+                                 dir.benefit = 0,
+                                 neutral.effect = 0,
+                                 directory='./test'){
   df <- data.frame()
-  for (i in c(-0.02, -0.1)){
-    for (j in seq(26, 30, by=2)){
-      for (k in seq(16,20, by=2)){
+  for (i in vary.lmb){
+    for (j in vary.trmt){
+      for (k in vary.ctrl){
       list.out <- confidenceCurves::makeConfidenceCurves(num.resp.ctrl = k,
                                        num.resp.trmt = j,
-                                       num.ctrl = 50,
-                                       num.trmt = 50,
+                                       num.ctrl = num.ctrl,
+                                       num.trmt = num.trmt,
+                                       estimator.type = 'odds ratio',
                                        min.effect = i,
                                        directory = directory,
                                        pval = 'ONE-SIDED',
                                        show='BENEFIT',
                                        save.plot=FALSE,
                                        return.plot=TRUE,
-                                       dir.benefit = 0,
-                                       neutral.effect=0,
+                                       dir.benefit = dir.benefit,
+                                       neutral.effect=neutral.effect,
                                        tag=paste("delta",i,"treatresp",j,"ctrlresp", k, sep="" )
       )
       df <- rbind(df, data.frame(list.out$text))
