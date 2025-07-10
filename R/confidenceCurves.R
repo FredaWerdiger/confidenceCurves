@@ -33,7 +33,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                                  num.trmt=NULL,
                                  directory="",
                                  show='BENEFIT', pval='TWO-SIDED',
-                                 min.effect=log(1.05),
+                                 min.effect=-log(1.05),
                                  neutral.effect=0,
                                  dir.benefit=0,
                                  save.plot=FALSE,
@@ -41,20 +41,22 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                                  tag=""){
 
   if (is.null(theta.estimator)){
-    if (is.null(sample.size) &
-        !is.null(num.ctrl) & !is.null(num.trmt)){
-      sample.size =  num.ctrl + num.trmt
-    } else {
-      stop("To get standard error from variance, specify sample size.")
+
+    if (!(is.numeric(num.resp.ctrl) &
+          is.numeric(num.resp.trmt) &
+          is.numeric(num.ctrl) &
+          is.numeric(num.trmt))){
+      stop("Specify either point estimate or binary outcome data.")
     }
     # ##############################################
     # CALCUATE TREATMENT EFFECT ESTIMATOR
     # ##############################################
-
+    sample.size = num.ctrl + num.trmt
     if (!typeof(estimator.type) == "character"){
       stop("Enter estimator type (odds ratio, risk difference)")
-    } else if (tolower(estimator.type) == 'odds ratio'|
-          grepl("odds",tolower(estimator.type))){
+    } else if (
+      tolower(estimator.type) == 'odds ratio'|
+      grepl("odds",tolower(estimator.type))){
       estimator.type = "Log Odds Ratio"
       a = num.resp.ctrl
       b = num.resp.trmt
@@ -65,9 +67,10 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       standard.error = sqrt(((1/a) + (1/b) + (1/c) + (1/d)))
       # variance
       treat.var = (standard.error**2) * sample.size
-      } else if (to.lower(estimator.type) == "risk difference" |
-                 (grepl("risk", tolower(estimator.type)) &
-                  grepl("diff", tolower(estimator.type)))){
+      } else if (
+        tolower(estimator.type) == "risk difference" |
+        (grepl("risk", tolower(estimator.type)) &
+         grepl("diff", tolower(estimator.type)))){
         estimator.type = "Risk Difference"
         crisk = num.resp.ctrl/num.ctrl
         trisk = num.resp.trmt/num.trmt
@@ -253,7 +256,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   # depending on direction of benefit and the position of neutral effect
   if (dir.benefit == 0){
     conf.benefit = int_density(cd, -Inf, neutral.effect)
-    conf.lmb = int_density(cd, -min.effect, Inf)
+    conf.lmb = int_density(cd, min.effect, Inf)
   } else {
     conf.benefit = int_density(cd, neutral.effect, Inf)
     conf.lmb = int_density(cd, -Inf, min.effect)}
@@ -328,15 +331,23 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
              arrow=ggplot2::arrow(length=ggplot2::unit(0.2, "cm"), type="closed", ends="last")) +
     ggplot2::annotate('segment', x=x.min, y=0.95, xend=as.numeric(cdf.int.x[5]), yend=0.95,
              arrow=ggplot2::arrow(length=ggplot2::unit(0.2, "cm"), type="closed", ends="last")) +
-    ggplot2::geom_hline(yintercept=0.95,  linetype="dashed") +
-    ggplot2::geom_hline(yintercept=0.75,  linetype="dashed") +
-    ggplot2::geom_hline(yintercept=0.50, linetype="dashed") +
-    ggplot2::geom_hline(yintercept=0.25, linetype="dashed") +
-    ggplot2::geom_hline(yintercept=0.05, linetype="dashed") +
+    # ggplot2::geom_hline(yintercept=0.95,  linetype="dashed") +
+    # ggplot2::geom_hline(yintercept=0.75,  linetype="dashed") +
+    # ggplot2::geom_hline(yintercept=0.50, linetype="dashed") +
+    # ggplot2::geom_hline(yintercept=0.25, linetype="dashed") +
+    # ggplot2::geom_hline(yintercept=0.05, linetype="dashed") +
     ggplot2::scale_x_continuous(n.breaks=5, expand = c(0, 0))+
     ggplot2::scale_y_continuous(n.breaks=6) +
     ggplot2::annotate(
-      x = theta.estimator + (2*standard.error), y = 0.05, label = "5% CI", geom = "text",
+      x = theta.estimator - (3*standard.error), y = 0.05, label = "5% CI", geom = "text",
+      color = "black",
+      lineheight = .3,
+      vjust = -0.2,
+      hjust=-0.1,
+      size=3,
+    ) +
+    ggplot2::annotate(
+      x = theta.estimator - (3*standard.error), y = 0.25, label = "25% CI", geom = "text",
       color = "black",
       lineheight = .3,
       vjust = 1.2,
@@ -344,15 +355,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       size=3,
     ) +
     ggplot2::annotate(
-      x = theta.estimator+ (2*standard.error), y = 0.25, label = "25% CI", geom = "text",
-      color = "black",
-      lineheight = .3,
-      vjust = 1.2,
-      hjust=-0.1,
-      size=3,
-    ) +
-    ggplot2::annotate(
-      x = theta.estimator+ (2*standard.error), y = 0.50, label = "50% CI", geom = "text",
+      x = theta.estimator - (3*standard.error), y = 0.50, label = "50% CI", geom = "text",
       color = "black",
       lineheight = .3,
       hjust=-0.1,
@@ -360,7 +363,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       size=3,
     ) +
     ggplot2::annotate(
-      x = theta.estimator+ (2*standard.error), y = 0.75, label = "75% CI", geom = "text",
+      x = theta.estimator - (3*standard.error), y = 0.75, label = "75% CI", geom = "text",
       color = "black",
       lineheight = .3,
       hjust=-0.1,
@@ -368,7 +371,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       size=3,
     ) +
     ggplot2::annotate(
-      x = theta.estimator+ (2*standard.error), y = 0.95, label = "95% CI", geom = "text",
+      x = theta.estimator - (3*standard.error), y = 0.95, label = "95% CI", geom = "text",
       color = "black",
       lineheight = .3,
       hjust=-0.1,
@@ -381,8 +384,18 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       color = "black",
       vjust = 1.1
     ) +
+    ggplot2::annotate(
+      x = min.effect, y = -Inf, label = delta.label, geom = "text",
+      parse = TRUE,
+      color = "black",
+      vjust = 1.1
+    ) +
     ggplot2::geom_vline(xintercept=theta.estimator, linetype="dashed", linewidth=0.8,
                color="aquamarine2") +
+    ggplot2::geom_vline(xintercept=neutral.effect, linetype="dashed", linewidth=0.8,
+                        color="blue") +
+    ggplot2::geom_vline(xintercept=min.effect, linetype="dashed", linewidth=0.8,
+                        color="forestgreen") +
     ggplot2::geom_label(data=label.p.one, ggplot2::aes( x=x, y=y, label=label),
                color="black",
                fill = "blanchedalmond",
@@ -415,7 +428,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     dnorm_limit = function(x){
       y = cd(x)
       if (dir.benefit==0){
-        y[x < -min.effect] = NA
+        y[x < min.effect] = NA
       } else {y[x > min.effect] = NA}
       return(y)
     }
@@ -601,6 +614,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                         s.error = round(standard.error, digits=4),
                         conf.benefit = conf.benefit,
                         conf.lack.meaningful.benefit = conf.lmb,
+                        conf.meaningful.benefit = 1 - conf.lmb,
                         p.value=p.value,
                         p.value.test=p.type,
                         ninetyfive.percent.CI.lower=cc.min,
