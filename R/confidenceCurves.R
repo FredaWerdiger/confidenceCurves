@@ -46,12 +46,15 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
           is.numeric(num.resp.trmt) &
           is.numeric(num.ctrl) &
           is.numeric(num.trmt))){
+
       stop("Specify either point estimate or binary outcome data.")
+
     }
     # ##############################################
     # CALCUATE TREATMENT EFFECT ESTIMATOR
     # ##############################################
     sample.size = num.ctrl + num.trmt
+
     if (!typeof(estimator.type) == "character"){
       stop("Enter estimator type (odds ratio, risk difference)")
     } else if (
@@ -75,11 +78,15 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
         crisk = num.resp.ctrl/num.ctrl
         trisk = num.resp.trmt/num.trmt
 
-        theta.estimator = trisk - crisk
+        risk_diff = trisk - crisk
 
         # variance after Marschner et al
-        var = (crisk * (1-crisk) +
+        treat.var = (crisk * (1-crisk) +
                  (crisk+risk_diff)*(1 - crisk - risk_diff))/2
+
+        standard.error = sqrt(treat.var / sample.size)
+
+        theta.estimator = risk_diff
       } else {
       stop("Enter risk difference or odds ratio for estimator type.")
       }
