@@ -423,14 +423,14 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       } else {y[x < neutral.effect] = NA}
       return(y)
     }
-    label = paste("Conf(BENEFIT)=","\n", conf.benefit.disp,"%", sep='')
+    label = paste("Conf(REGION)=","\n", conf.benefit.disp,"%", sep='')
   } else if (show=='EQUIV'){
     dnorm_limit =function(x) {
       y = cd(x)
       y[x > min.effect & x< - min.effect] = NA
       return(y)
     }
-    label = paste("Conf(EQUIV)=","\n", conf.equiv.disp,"%", sep='')
+    label = paste("Conf(REGION)=","\n", conf.equiv.disp,"%", sep='')
   } else if (show=='LMB'){
     dnorm_limit = function(x){
       y = cd(x)
@@ -439,7 +439,15 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       } else {y[x > min.effect] = NA}
       return(y)
     }
-    label = paste("Conf(LMB)=","\n", conf.lmb.disp,"%", sep='')
+    label = paste("Conf(REGION)=","\n", conf.lmb.disp,"%", sep='')
+  } else if(show == 'MB'){
+    y = cd(x)
+    if (dir.benefit==0){
+      y[x > min.effect] = NA
+    } else {y[x < min.effect] = NA}
+    return(y)
+  }
+  label = paste("Conf(REGION)=","\n", 1- conf.lmb.disp,"%", sep='')
   }
 
   # moved dashed line accordingly
@@ -652,7 +660,7 @@ testConfidenceCurves <- function(num.ctrl=50,
                                        num.resp.trmt = j,
                                        num.ctrl = num.ctrl,
                                        num.trmt = num.trmt,
-                                       estimator.type = 'riskdiff',
+                                       estimator.type = 'odds ratio',
                                        min.effect = i,
                                        directory = directory,
                                        pval = 'ONE-SIDED',
