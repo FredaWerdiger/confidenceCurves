@@ -14,10 +14,18 @@
 # num.resp.ctrl = number of control subject that responded
 # num.resp.trmt = number of treatment subjects that responded
 # sample.size = enter if didn't supply num.ctrl and num.trmt
-# neutral.effect = what represents a neutral effect (1, or 0)
+# neutral.effect = what represents a neutral effect. Default is 0. Assumes log odds.
 # dir.benefit: 0 = lower is better, 1 = higher is better
 # directory: existing location of where you want to save the image (end with /)
-# show: Show 'BENEFIT' (default) or 'EQUIV' (equivalence) on graph
+# show: Show 'BENEFIT' (default) 'LMB' (lack of meaningful benefit),
+#       'MB' (meaningful benefit) or 'EQUIV' (equivalence) on graph
+# min.effect = define the minimum interesting effect
+# dir.min.effect = define the direction around the min effect that you're interested in
+#                  assumption that it is the LACK of interest effect.
+# equiv = can specific two thresholds as c(a,b) to express confidence that effect is between and a b
+#        otherwise, by default, equivalence is parameterized by min.effect
+# save.plot = save the plot to directory or no
+# return.plot = whether or not to return the plots with the outcome, separate from the text output.
 
 
 makeConfidenceCurves <- function(theta.estimator=NULL,
@@ -36,6 +44,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                                  min.effect=-log(1.05),
                                  neutral.effect=0,
                                  dir.benefit=0,
+                                 dir.min.effect=NULL,
+                                 equiv=NULL,
                                  save.plot=FALSE,
                                  return.plot=FALSE,
                                  tag=""){
@@ -116,6 +126,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       stop("Error estimation not supplied.")
     }
   }
+
   #########################
   # CONFIDENCE DISTRIBUTION
   #########################
@@ -272,10 +283,17 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   conf.benefit.disp = conf.disp(conf.benefit)
   conf.lmb.disp = conf.disp(conf.lmb)
 
-  # equivalence (never been used)
-  # (conf(0<theta<log(min.effect)))
-  conf.equiv = int_density(cd, -min.effect, min.effect)
-  conf.equiv.disp = conf.disp(conf.equiv)
+  # equivalence
+  # if thresholds are not specified then use min effect.
+  if (!is.null(equiv)){
+      conf.equiv = int_density(cd, equiv[1], equiv[2])
+      conf.equiv.disp = conf.disp(conf.equiv)
+  } else {
+    conf.equiv = int_density(cd, min(min.effect, -min.effect),
+                             max(min.effect, - min.effect))
+    conf.equiv.disp = conf.disp(conf.equiv)
+  }
+
 
   # p-values under null
   p.value.one.tailed = pval.func.one.tailed(0, theta.estimator)[[1]]
@@ -318,7 +336,24 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     y = 0.4,
     label = paste("p = ", p.value.one.tailed, sep='')
   )
+  # arrows for benefit and lmb
+  if (dir.benefit == 0){
+    x.end.benefit = -standard.error/2
+    if ((show == 'MB') | (dir.min.effect==dir.benefit)){
+      x.end.lmb = min.effect - standard.error/2
+    } else{
+      x.end.lmb = min.effect + standard.error/2
+    }
+  } else {
+    x.end.benefit = standard.error/2
+    if ((show == 'MB') | (dir.min.effect==dir.benefit)){
+      x.end.lmb = min.effect + standard.error/2
+    } else {
+      x.end.lmb = min.effect - standard.error/2
+    }
+  }
 
+  # plot 1, cumulative distribution function
   plot1 = ggplot2::ggplot(x, ggplot2::aes(x)) +
     ggplot2::xlab("Treatment effect") +
     ggplot2::ylab("One-sided Confidence Distribution Function") +
@@ -401,8 +436,14 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                color="aquamarine2") +
     ggplot2::geom_vline(xintercept=neutral.effect, linetype="dashed", linewidth=0.8,
                         color="blue") +
+    ggplot2::annotate('segment', x=neutral.effect, y=0.2, xend=x.end.benefit, yend=0.2,
+                      color="blue", size=1.5, linejoin="mitre",lineend="butt",
+                      arrow=ggplot2::arrow(length=ggplot2::unit(0.4, "cm"))) +
     ggplot2::geom_vline(xintercept=min.effect, linetype="dashed", linewidth=0.8,
                         color="forestgreen") +
+    ggplot2::annotate('segment', x=min.effect, y=0.4, xend=x.end.lmb, yend=0.4,
+                      color="forestgreen", size=1.5, linejoin="mitre", lineend="butt",
+                      arrow=ggplot2::arrow(length=ggplot2::unit(0.4, "cm"))) +
     ggplot2::geom_label(data=label.p.one, ggplot2::aes( x=x, y=y, label=label),
                color="black",
                fill = "blanchedalmond",
@@ -427,7 +468,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   } else if (show=='EQUIV'){
     dnorm_limit =function(x) {
       y = cd(x)
-      y[x > min.effect & x< - min.effect] = NA
+      y[x > max(equiv)] = NA
+      y[x < min(equiv)] = NA
       return(y)
     }
     label = paste("Conf(REGION)=","\n", conf.equiv.disp,"%", sep='')
@@ -441,19 +483,20 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     }
     label = paste("Conf(REGION)=","\n", conf.lmb.disp,"%", sep='')
   } else if(show == 'MB'){
+    dnorm_limit = function(x){
     y = cd(x)
     if (dir.benefit==0){
       y[x > min.effect] = NA
     } else {y[x < min.effect] = NA}
     return(y)
   }
-  label = paste("Conf(REGION)=","\n", 1- conf.lmb.disp,"%", sep='')
+  label = paste("Conf(REGION)=","\n", 100 - conf.lmb.disp,"%", sep='')
   }
 
   # moved dashed line accordingly
   if ((show == "BENEFIT") | (show == "EQUIV")){
     dashed.line.intercept=neutral.effect
-  } else if (show == "LMB"){
+  } else if ((show == "LMB") | (show == "MB")){
     dashed.line.intercept=min.effect
   }
 
@@ -630,6 +673,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                         conf.benefit = conf.benefit,
                         conf.lack.meaningful.benefit = conf.lmb,
                         conf.meaningful.benefit = 1 - conf.lmb,
+                        conf.equivalent = conf.equiv,
                         p.value=p.value,
                         p.value.test=p.type,
                         ninetyfive.percent.CI.lower=cc.min,
@@ -672,7 +716,7 @@ testConfidenceCurves <- function(num.ctrl=50,
                                        tag=paste("delta",i,"treatresp",j,"ctrlresp", k, sep="" )
       )
       df <- rbind(df, data.frame(list.out$text))
-      print(list.out$pdf)
+      print(list.out$cdf)
       }
     }
   }
