@@ -1,32 +1,40 @@
-
-# The equations in this function are derived from
-# Marschner, I. "Confidence distributions for treatment effects in Clinical Trials:
-# Posteriors without Priors", Statistics in Medicine, 2024;43:1271-1289.
+#' @title Frequentist confidence analysis for any treatment effect
+#'
+#' @description This package performs frequentist confidence analysis, given a point estimate and associated error estimation, to answer the question:
+#' How much confidence can we have in a particular treatment effect of interest?
+#'
+#' @details This is a package to perform frequentist confidence analysis on a observed treatment estimate. You may either supply a point estimate and associated precision estimate
+#' via standard error, variance and sample size, and 95\% CI interval, or enter outcome data directly (the latter option is only available for binary data). Then, define a neutral effect,
+#' and a meaningful clinical effect, and the direction of interest (above or below these) and the function will calculate how much confidence one can have in the associated treatment effect (e.g., beneficial, lacking meaningful benefit).
+#' Also returned is the traditional frequentist p-value.
+#'
+#'
+#' @references Equations used in this package are derived from Marschner, I. "Confidence distributions for treatment effects in Clinical Trials: Posteriors without Priors", Statistics in Medicine, 2024;43:1271-1289.
 
 # input function:
-# theta.estimator = directly enter the point estimator on the log odds scale
-# treat.var = variance of estimator
-# standard.error = if variance is not supplied, with sample size, supply standard error or confidence interval
-# confidence.upper = upper 95% confidence interval
-# confidence.lower = lower 95% confidence interval
-# num.ctrl = number of subjects in the control group
-# num.trmt = number of subjects in the treatment group
-# num.resp.ctrl = number of control subject that responded
-# num.resp.trmt = number of treatment subjects that responded
-# sample.size = enter if didn't supply num.ctrl and num.trmt
-# neutral.effect = what represents a neutral effect. Default is 0. Assumes log odds.
-# dir.benefit: 0 = lower is better, 1 = higher is better
-# directory: existing location of where you want to save the image (end with /)
-# show: Show 'BENEFIT' (default) 'LMB' (lack of meaningful benefit),
-#       'MB' (meaningful benefit) or 'EQUIV' (equivalence) on graph
-# min.effect = define the minimum interesting effect
-# dir.min.effect = define the direction around the min effect that you're interested in
-#                  assumption that it is the LACK of interest effect.
-# equiv = can specific two thresholds as c(a,b) to express confidence that effect is between and a b
-#        otherwise, by default, equivalence is parameterized by min.effect
-# save.plot = save the plot to directory or no
-# return.plot = whether or not to return the plots with the outcome, separate from the text output.
-
+#' @param theta.estimator Enter the point estimate, assumed to follow a Normal distribution.
+#' @param treat.var Variance associated with the point estimate. Must be supplied with sample size.
+#' @param standard.error Standard error associated with the point estimate.
+#' @param confidence.lower Lower boundary of 95\% confidence interval.
+#' @param confidence.upper Upper boundary of 95\% confidence interval.
+#' @param num.ctrl When specifying binary input data; Number of subjects in the control group.
+#' @param num.trmt When specifying binary input data; Number of subjects in the treatment group.
+#' @param num.resp.ctrl When specifying binary input data; Number of responders in control group (who experienced the outcome).
+#' @param num.resp.trmt When specifying binary input data; Number of responders in treatment group (who experienced the outcome).
+#' @param sample.size Sample size. Can be calculated from num.ctrl and num.trmt.
+#' @param neutral.effect Value corresponding to no effect. Default is 0. If using odds ratio, data should be on the log scale for a neutral effect of 0.
+#' @param dir.benefit Direction (0 or 1) around the neutral effect corresponding to benefit. 0: less than no effect value (default); 1: more than no effect value.
+#' @param directory Character string expressing directory where you want to save the confidence curve family. Default is "".
+#' @param min.effect The minimally clinically interesting effect (meaningful benefit). Default is -0.05.
+#' @param dir.min.effect Direction (0 or 1) around the min effect that you're interested in. 0: less than min effect value; 1: more than min effect value. Default assumes LACK of meaningful benefit.
+#' @param equiv If interested in expressing confidence in treatment equivalence, you can specify
+#'  two numbers as c(a,b) to bound the equivalency region. Default uses min.effect and -min.effect as a and b
+#' @param show On the confidence density function, which region to display in shaded blue: BENEFIT' (default), 'LMB' (lack of meaningful benefit),
+#' 'MB' (meaningful benefit) or 'EQUIV' (equivalence).
+#' @param save.plot save the plot as png to directory, TRUE or FALSE (default).
+#' @param return.plot Return the plots from the function, TRUE or FALSE (default).
+#' @param tag phrase to append to the image filename as <directory>/confidence_curves_<tag>.png. Default is "".
+#' @return List of quantities associated with confidence analysis (under $text) and (if supplied TRUE to return.plot) four confidence curves
 
 makeConfidenceCurves <- function(theta.estimator=NULL,
                                  estimator.type=NULL,
@@ -41,7 +49,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
                                  num.trmt=NULL,
                                  directory="",
                                  show='BENEFIT', pval='TWO-SIDED',
-                                 min.effect=-log(1.05),
+                                 min.effect=-0.05,
                                  neutral.effect=0,
                                  dir.benefit=0,
                                  dir.min.effect=NULL,
