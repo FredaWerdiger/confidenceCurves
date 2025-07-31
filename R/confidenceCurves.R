@@ -456,12 +456,12 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     ggplot2::geom_vline(xintercept=neutral.effect, linetype="dashed", linewidth=0.8,
                         color="blue") +
     ggplot2::annotate('segment', x=neutral.effect, y=0.2, xend=x.end.benefit, yend=0.2,
-                      color="blue", size=1.5, linejoin="mitre",lineend="butt",
+                      color="blue", linewidth=1.5, linejoin="mitre",lineend="butt",
                       arrow=ggplot2::arrow(length=ggplot2::unit(0.4, "cm"))) +
     ggplot2::geom_vline(xintercept=min.effect, linetype="dashed", linewidth=0.8,
                         color="forestgreen") +
     ggplot2::annotate('segment', x=min.effect, y=0.4, xend=x.end.lmb, yend=0.4,
-                      color="forestgreen", size=1.5, linejoin="mitre", lineend="butt",
+                      color="forestgreen", linewidth=1.5, linejoin="mitre", lineend="butt",
                       arrow=ggplot2::arrow(length=ggplot2::unit(0.4, "cm"))) +
     ggplot2::geom_label(data=label.p.one, ggplot2::aes( x=x, y=y, label=label),
                color="black",
@@ -726,12 +726,17 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
 #' testConfidenceCurves()
 #' # to fix lmb
 #' testConfidenceCurves(vary.lmb = -0.05)
+#' # to run without showing plots
+#' testConfidenceCurves(return.plot=F)
+
 testConfidenceCurves <- function(num.ctrl=50,
                                  num.trmt=50,
                                  vary.ctrl=seq(16,20, by=2),
                                  vary.trmt=seq(26, 30, by=2),
                                  vary.lmb = c(-0.05, -0.1),
                                  estimate.type = 'odds ratio',
+                                 return.plot = TRUE,
+                                 save.plot = FALSE,
                                  directory='./test'){
   df <- data.frame()
   for (i in vary.lmb){
@@ -746,11 +751,18 @@ testConfidenceCurves <- function(num.ctrl=50,
                                        directory = directory,
                                        pval = 'ONE-SIDED',
                                        show='BENEFIT',
-                                       save.plot=TRUE,
-                                       return.plot=FALSE,
+                                       save.plot=save.plot,
+                                       return.plot=return.plot,
                                        tag=paste("delta",i,"treatresp",j,"ctrlresp", k, sep="" )
       )
-      df <- rbind(df, data.frame(list.out))
+
+      if (return.plot){
+        df <- rbind(df, data.frame(list.out$text))
+        print(list.out$cdf)
+      } else{
+        df <- rbind(df, data.frame(list.out))
+      }
+
       }
     }
   }
