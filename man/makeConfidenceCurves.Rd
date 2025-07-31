@@ -9,8 +9,8 @@ makeConfidenceCurves(
   estimator.type = NULL,
   treat.var = NULL,
   standard.error = NULL,
-  confidence.upper = NULL,
   confidence.lower = NULL,
+  confidence.upper = NULL,
   sample.size = NULL,
   num.resp.ctrl = NULL,
   num.resp.trmt = NULL,
@@ -32,13 +32,15 @@ makeConfidenceCurves(
 \arguments{
 \item{theta.estimator}{Enter the point estimate, assumed to follow a Normal distribution.}
 
+\item{estimator.type}{when entering binary data into inputs, specify "risk difference" or "odds ratio". For "odds ratio" option, the log odds with be used.}
+
 \item{treat.var}{Variance associated with the point estimate. Must be supplied with sample size.}
 
 \item{standard.error}{Standard error associated with the point estimate.}
 
-\item{confidence.upper}{Upper boundary of 95\% confidence interval.}
-
 \item{confidence.lower}{Lower boundary of 95\% confidence interval.}
+
+\item{confidence.upper}{Upper boundary of 95\% confidence interval.}
 
 \item{sample.size}{Sample size. Can be calculated from num.ctrl and num.trmt.}
 
@@ -54,6 +56,8 @@ makeConfidenceCurves(
 
 \item{show}{On the confidence density function, which region to display in shaded blue: BENEFIT' (default), 'LMB' (lack of meaningful benefit),
 'MB' (meaningful benefit) or 'EQUIV' (equivalence).}
+
+\item{pval}{Specify "ONE-SIDED" or "TWO_SIDED" test for returned p-value. Default is "TWO-SIDED".}
 
 \item{min.effect}{The minimally clinically interesting effect (meaningful benefit). Default is -0.05.}
 
@@ -73,18 +77,25 @@ two numbers as c(a,b) to bound the equivalency region. Default uses min.effect a
 \item{tag}{phrase to append to the image filename as <directory>/confidence_curves_<tag>.png. Default is "".}
 }
 \value{
-List of quantities associated with confidence analysis (under $text) and (if supplied TRUE to return.plot) four confidence curves
+Returns a list of values associated with confidence analysis (under $text) and (if supplied TRUE to return.plot) four confidence curves
 }
 \description{
-This package performs frequentist confidence analysis, given a point estimate and associated error estimation, to answer the question:
+This function performs frequentist confidence analysis, given a point estimate and associated error estimation, to answer the question:
 How much confidence can we have in a particular treatment effect of interest?
 }
 \details{
-This is a package to perform frequentist confidence analysis on a observed treatment estimate. You may either supply a point estimate and associated precision estimate
+This is a function to perform frequentist confidence analysis on a observed treatment estimate. You may either supply a point estimate and associated precision estimate
 via standard error, variance and sample size, and 95\% CI interval, or enter outcome data directly (the latter option is only available for binary data). Then, define a neutral effect,
 and a meaningful clinical effect, and the direction of interest (above or below these) and the function will calculate how much confidence one can have in the associated treatment effect (e.g., beneficial, lacking meaningful benefit).
 Also returned is the traditional frequentist p-value.
 }
+\examples{
+makeConfidenceCurves(
+theta.estimator = -0.22,
+confidence.lower = -0.36,
+confidence.upper = -0.07
+)
+}
 \references{
-Equations used in this package are derived from Marschner, I. "Confidence distributions for treatment effects in Clinical Trials: Posteriors without Priors", Statistics in Medicine, 2024;43:1271-1289.
+Equations used in this function are derived from Marschner, I. "Confidence distributions for treatment effects in Clinical Trials: Posteriors without Priors", Statistics in Medicine, 2024;43:1271-1289.
 }

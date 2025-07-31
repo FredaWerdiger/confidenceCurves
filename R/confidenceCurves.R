@@ -1,18 +1,19 @@
-#' @title Frequentist confidence analysis for any treatment effect
+#' Frequentist confidence analysis for any treatment effect
 #'
-#' @description This package performs frequentist confidence analysis, given a point estimate and associated error estimation, to answer the question:
+#' @description This function performs frequentist confidence analysis, given a point estimate and associated error estimation, to answer the question:
 #' How much confidence can we have in a particular treatment effect of interest?
 #'
-#' @details This is a package to perform frequentist confidence analysis on a observed treatment estimate. You may either supply a point estimate and associated precision estimate
+#' @details This is a function to perform frequentist confidence analysis on a observed treatment estimate. You may either supply a point estimate and associated precision estimate
 #' via standard error, variance and sample size, and 95\% CI interval, or enter outcome data directly (the latter option is only available for binary data). Then, define a neutral effect,
 #' and a meaningful clinical effect, and the direction of interest (above or below these) and the function will calculate how much confidence one can have in the associated treatment effect (e.g., beneficial, lacking meaningful benefit).
 #' Also returned is the traditional frequentist p-value.
 #'
 #'
-#' @references Equations used in this package are derived from Marschner, I. "Confidence distributions for treatment effects in Clinical Trials: Posteriors without Priors", Statistics in Medicine, 2024;43:1271-1289.
+#' @references Equations used in this function are derived from Marschner, I. "Confidence distributions for treatment effects in Clinical Trials: Posteriors without Priors", Statistics in Medicine, 2024;43:1271-1289.
 
 # input function:
 #' @param theta.estimator Enter the point estimate, assumed to follow a Normal distribution.
+#'
 #' @param treat.var Variance associated with the point estimate. Must be supplied with sample size.
 #' @param standard.error Standard error associated with the point estimate.
 #' @param confidence.lower Lower boundary of 95\% confidence interval.
@@ -33,15 +34,25 @@
 #' 'MB' (meaningful benefit) or 'EQUIV' (equivalence).
 #' @param save.plot save the plot as png to directory, TRUE or FALSE (default).
 #' @param return.plot Return the plots from the function, TRUE or FALSE (default).
+#' @param estimator.type when entering binary data into inputs, specify "risk difference" or "odds ratio". For "odds ratio" option, the log odds with be used.
+#' @param pval Specify "ONE-SIDED" or "TWO_SIDED" test for returned p-value. Default is "TWO-SIDED".
 #' @param tag phrase to append to the image filename as <directory>/confidence_curves_<tag>.png. Default is "".
-#' @return List of quantities associated with confidence analysis (under $text) and (if supplied TRUE to return.plot) four confidence curves
+#'
+#' @return Returns a list of values associated with confidence analysis (under $text) and (if supplied TRUE to return.plot) four confidence curves
+#' @export
+#' @examples
+#' makeConfidenceCurves(
+#' theta.estimator = -0.22,
+#' confidence.lower = -0.36,
+#' confidence.upper = -0.07
+#' )
 
 makeConfidenceCurves <- function(theta.estimator=NULL,
                                  estimator.type=NULL,
                                  treat.var=NULL,
                                  standard.error=NULL,
-                                 confidence.upper=NULL,
                                  confidence.lower=NULL,
+                                 confidence.upper=NULL,
                                  sample.size=NULL,
                                  num.resp.ctrl=NULL,
                                  num.resp.trmt=NULL,
@@ -347,14 +358,14 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   # arrows for benefit and lmb
   if (dir.benefit == 0){
     x.end.benefit = -standard.error/2
-    if ((show == 'MB') | (dir.min.effect==dir.benefit)){
+    if ((show == 'MB') | identical(dir.min.effect,dir.benefit)){
       x.end.lmb = min.effect - standard.error/2
     } else{
       x.end.lmb = min.effect + standard.error/2
     }
   } else {
     x.end.benefit = standard.error/2
-    if ((show == 'MB') | (dir.min.effect==dir.benefit)){
+    if ((show == 'MB') | identical(dir.min.effect, dir.benefit)){
       x.end.lmb = min.effect + standard.error/2
     } else {
       x.end.lmb = min.effect - standard.error/2
@@ -695,14 +706,32 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   }
 }
 
+#' Test confidence curves
+#' @description
+#' A short function to test makeConfidenceCurves for binary data
+#'
+#' @param num.ctrl Number of subjects in control group. Default is 50.
+#' @param num.trmt Number of subjects in treatment group. Default is 50.
+#' @param vary.ctrl List of numbers to vary response in control group. Default is c(16, 18, 20).
+#' @param vary.trmt List of numbers to vary response in treatment group. Default is c(26, 28,30).
+#' @param vary.lmb List of numbers to vary definition of meaningful benefit. Default is c(-0.05, -0.1).
+#' @param estimate.type Type of estimator, options are "risk difference" and "odds ratio" (default).
+#' @param directory Location to save images. Default is './test'.
+#'
+#' @return Returns a dataframe
+#' @export
+#'
+#' @examples
+#' # to use default settings and generate 18 row DataFrame
+#' testConfidenceCurves()
+#' # to fix lmb
+#' testConfidenceCurves(vary.lmb = -0.05)
 testConfidenceCurves <- function(num.ctrl=50,
                                  num.trmt=50,
                                  vary.ctrl=seq(16,20, by=2),
                                  vary.trmt=seq(26, 30, by=2),
                                  vary.lmb = c(-0.05, -0.1),
                                  estimate.type = 'odds ratio',
-                                 dir.benefit = 0,
-                                 neutral.effect = 0,
                                  directory='./test'){
   df <- data.frame()
   for (i in vary.lmb){
@@ -717,14 +746,11 @@ testConfidenceCurves <- function(num.ctrl=50,
                                        directory = directory,
                                        pval = 'ONE-SIDED',
                                        show='BENEFIT',
-                                       save.plot=FALSE,
-                                       return.plot=TRUE,
-                                       dir.benefit = dir.benefit,
-                                       neutral.effect=neutral.effect,
+                                       save.plot=TRUE,
+                                       return.plot=FALSE,
                                        tag=paste("delta",i,"treatresp",j,"ctrlresp", k, sep="" )
       )
-      df <- rbind(df, data.frame(list.out$text))
-      print(list.out$cdf)
+      df <- rbind(df, data.frame(list.out))
       }
     }
   }
