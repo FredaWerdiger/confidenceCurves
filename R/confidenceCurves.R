@@ -37,7 +37,7 @@
 #' @param estimator.type when entering binary data into inputs, specify "risk difference" or "odds ratio". For "odds ratio" option, the log odds with be used.
 #' @param pval Specify "ONE-SIDED" or "TWO_SIDED" test for returned p-value. Default is "TWO-SIDED".
 #' @param tag phrase to append to the image filename as <directory>/confidence_curves_<tag>.png. Default is "".
-#'
+#' @importFrom rlang .data
 #' @return Returns a list of values associated with confidence analysis (under $text) and (if supplied TRUE to return.plot) four confidence curves
 #' @export
 #' @examples
@@ -156,13 +156,13 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   # from one-sided confidence intervals
   cdf = function(theta){
     temp = (theta.estimator - theta)/ (standard.error)
-    return(1 - pnorm(temp)) # 1 - alpha = confidence
+    return(1 - stats::pnorm(temp)) # 1 - alpha = confidence
   }
 
   # confidence density function
   cd = function(theta){
     temp = (theta.estimator - theta)/ (standard.error)
-    return((1/standard.error) * dnorm(temp))
+    return((1/standard.error) * stats::dnorm(temp))
   }
 
   # confidence curve
@@ -175,7 +175,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
 
   cc = function(theta){
     temp = (theta.estimator - theta)/ (standard.error)
-    temp = 1 - pnorm(temp)
+    temp = 1 - stats::pnorm(temp)
     return(abs(1 - (2*temp)))
   }
 
@@ -259,7 +259,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
 
   # take the first and last values of ind to get the two intercepts
   cc.min = signif(x[ind[1]], 2)
-  cc.max = signif(x[tail(ind, 1)],2)
+  cc.max = signif(x[utils::tail(ind, 1)],2)
 
 
   # find the x-location nearest to the theta estimator
@@ -276,7 +276,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   # functions:
 
   int_density = function(fn, min, max){
-    auc = integrate(fn, min, max)
+    auc = stats::integrate(fn, min, max)
     conf = auc$value
     return(conf)
   }
@@ -380,8 +380,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     ggplot2::theme_bw() +
     ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
                    panel.grid.minor = ggplot2::element_blank(),
-          axis.text.y = ggplot2::element_text(angle = 90),
-          line) +
+          axis.text.y = ggplot2::element_text(angle = 90)
+          ) +
     ggplot2::annotate('segment', x=x.min, y=0.05, xend=as.numeric(cdf.int.x[1]), yend=0.05,
              arrow=ggplot2::arrow(length=ggplot2::unit(0.2, "cm"), type="closed", ends="last")) +
     ggplot2::annotate('segment', x=x.min, y=0.25, xend=as.numeric(cdf.int.x[2]), yend=0.25,
@@ -463,7 +463,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     ggplot2::annotate('segment', x=min.effect, y=0.4, xend=x.end.lmb, yend=0.4,
                       color="forestgreen", linewidth=1.5, linejoin="mitre", lineend="butt",
                       arrow=ggplot2::arrow(length=ggplot2::unit(0.4, "cm"))) +
-    ggplot2::geom_label(data=label.p.one, ggplot2::aes( x=x, y=y, label=label),
+    ggplot2::geom_label(data=label.p.one, ggplot2::aes(x=.data$x, y=.data$y, label=.data$label),
                color="black",
                fill = "blanchedalmond",
                lineheight = 0.9,
@@ -536,7 +536,6 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
       x = theta.estimator, y = cd(theta.estimator)/3, label=label, geom = "text",
       color = "black",
       lineheight = .9,
-      # vjust = .8,
       size = 4,
     ) +
     ggplot2::annotate(
@@ -580,9 +579,11 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     ) +
     ggplot2::coord_cartesian(clip = "off") +
     ggplot2::annotate('segment', x=cc.min, y=0.95, xend=cc.max, yend=0.95) +
-    ggplot2::geom_point(data=point.loc, ggplot2::aes(x=x, y=y),
+    ggplot2::geom_point(data=point.loc, ggplot2::aes(x=.data$x, y=.data$y),
                         size=4, color="black", fill="orange", shape=21) +
-    ggplot2::geom_label(data=label.loc, ggplot2::aes( x=x, y=y, label=label),
+    ggplot2::geom_label(data=label.loc, ggplot2::aes(x=.data$x,
+                                                     y=.data$y,
+                                                     label=.data$label),
                color="black",
                fill = "orange",
                lineheight = 0.9,
@@ -594,16 +595,15 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   # NULL
 
   # get the z-statistic
-  z.score = qnorm(conf.benefit)
+  z.score = stats::qnorm(conf.benefit)
 
   dnorm_limit_sd = function(x) {
-    y = dnorm(x, sd=standard.error)  ## assumed same SD ##
+    y = stats::dnorm(x, sd=standard.error)  ## assumed same SD ##
     if (theta.estimator < 0){
       y[x > theta.estimator & x < -theta.estimator] = NA
     } else {
       y[x > -theta.estimator & x < theta.estimator] = NA
     }
-
     return(y)
   }
 
@@ -615,8 +615,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   # format z score label
   label.z = data.frame(
     x = theta.estimator - 4*x.ticks, # set location automatically relative to theta estimator
-    y = (dnorm(0, sd=standard.error)/2),
-    label = paste("z = ", round(qnorm(conf.benefit), digits=2), sep='')
+    y = (stats::dnorm(0, sd=standard.error)/2),
+    label = paste("z = ", round(stats::qnorm(conf.benefit), digits=2), sep='')
   )
 
   # format p-value label
@@ -627,7 +627,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     ggplot2::xlab("Treatment effect under null") +
     ggplot2::ylab("Probability Density Function") +
     ggplot2::theme_bw() +
-    ggplot2::stat_function(fun=function(x) dnorm(x, sd=standard.error), linewidth=1.2) +
+    ggplot2::stat_function(fun=function(x) stats::dnorm(x, sd=standard.error), linewidth=1.2) +
     ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
                    panel.grid.minor = ggplot2::element_blank(),
                    axis.text.y = ggplot2::element_text(angle = 90))+
@@ -642,7 +642,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     ggplot2::stat_function(fun = dnorm_limit_sd, geom = "area", fill = "blue4", alpha = 0.4)+
     ggplot2::geom_vline(xintercept=theta.estimator, linetype="dashed", linewidth=0.6,
                color="darkgrey") +
-    ggplot2::geom_label(data=label.z, ggplot2::aes( x=x, y=y, label=label),
+    ggplot2::geom_label(data=label.z,
+                        ggplot2::aes(x=.data$x, y=.data$y, label=.data$label),
                color="black",
                fill = "orange",
                lineheight = 0.9,
@@ -659,7 +660,7 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     ggplot2::coord_cartesian(clip = "off")
 
   # plot the grid
-  cowplot::plot_grid(plot1, plot2, plot3,plot4, labels="AUTO" )
+  cowplot::plot_grid(plot1, plot2, plot3, plot4, labels="AUTO" )
 
   ############
   # SAVE PLOTS
@@ -668,7 +669,6 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
   if(save.plot=='TRUE'){
     # set the directory
     dir.create(file.path(directory), showWarnings = FALSE, recursive = TRUE)
-    # setwd(file.path(directory))
     if ((! endsWith(directory, "/")) & (! endsWith(directory, "\\"))){
       directory = paste0(directory, "/")
     }
@@ -717,6 +717,8 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
 #' @param vary.lmb List of numbers to vary definition of meaningful benefit. Default is c(-0.05, -0.1).
 #' @param estimate.type Type of estimator, options are "risk difference" and "odds ratio" (default).
 #' @param directory Location to save images. Default is './test'.
+#' @param return.plot Return and print the CFD plot. TRUE (default) or FALSE.
+#' @param save.plot Save the family of confidence curves to directory. TRUE or FALSE (default).
 #'
 #' @return Returns a dataframe
 #' @export

@@ -11,6 +11,8 @@ testConfidenceCurves(
   vary.trmt = seq(26, 30, by = 2),
   vary.lmb = c(-0.05, -0.1),
   estimate.type = "odds ratio",
+  return.plot = TRUE,
+  save.plot = FALSE,
   directory = "./test"
 )
 }
@@ -27,6 +29,10 @@ testConfidenceCurves(
 
 \item{estimate.type}{Type of estimator, options are "risk difference" and "odds ratio" (default).}
 
+\item{return.plot}{Return and print the CFD plot. TRUE (default) or FALSE.}
+
+\item{save.plot}{Save the family of confidence curves to directory. TRUE or FALSE (default).}
+
 \item{directory}{Location to save images. Default is './test'.}
 }
 \value{
@@ -40,4 +46,6 @@ A short function to test makeConfidenceCurves for binary data
 testConfidenceCurves()
 # to fix lmb
 testConfidenceCurves(vary.lmb = -0.05)
+# to run without showing plots
+testConfidenceCurves(return.plot=F)
 }

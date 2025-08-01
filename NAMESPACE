@@ -2,3 +2,4 @@
 
 export(makeConfidenceCurves)
 export(testConfidenceCurves)
+importFrom(rlang,.data)
