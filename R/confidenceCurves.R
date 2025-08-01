@@ -724,12 +724,14 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
 #' @export
 #'
 #' @examples
-#' # to use default settings and generate 18 row DataFrame
-#' testConfidenceCurves()
-#' # to fix lmb
-#' testConfidenceCurves(vary.lmb = -0.05)
+#' # to fix control and treatment responders
+#' testConfidenceCurves(vary.lmb = c(-0.05, -0.1), vary.ctrl = c(18), vary.trmt = c(28))
 #' # to run without showing plots
-#' testConfidenceCurves(return.plot=F)
+#' testConfidenceCurves(
+#' vary.lmb = c(-0.05, -0.1),
+#' vary.ctrl = c(18),
+#' vary.trmt = c(28),
+#' return.plot=FALSE)
 
 testConfidenceCurves <- function(num.ctrl=50,
                                  num.trmt=50,
