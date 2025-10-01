@@ -1,11 +1,11 @@
 #' Frequentist confidence analysis for any treatment effect
 #'
-#' @description This function performs frequentist confidence analysis, given a point estimate and associated error estimation, to answer the question:
+#' @description Performs frequentist confidence analysis given a point estimate and its associated error. Frequentist confidence analysis is an alternative to Bayesian analysis which answers the question:
 #' How much confidence can we have in a particular treatment effect of interest?
 #'
-#' @details This is a function to perform frequentist confidence analysis on a observed treatment estimate. You may either supply a point estimate and associated precision estimate
+#' @details This is a function to perform frequentist confidence analysis on observed data. You may either supply a point estimate and associated precision estimate
 #' via standard error, variance and sample size, and 95\% CI interval, or enter outcome data directly (the latter option is only available for binary data). Then, define a neutral effect,
-#' and a meaningful clinical effect, and the direction of interest (above or below these) and the function will calculate how much confidence one can have in the associated treatment effect (e.g., beneficial, lacking meaningful benefit).
+#' and a meaningful clinical effect, and the direction of interest (above or below these) and the function will calculate how much confidence one can have that the true treatment effect is within this range (e.g., beneficial, lacking meaningful benefit).
 #' Also returned is the traditional frequentist p-value.
 #'
 #'
@@ -27,18 +27,18 @@
 #' @param dir.benefit Direction (0 or 1) around the neutral effect corresponding to benefit. 0: less than no effect value (default); 1: more than no effect value.
 #' @param directory Character string expressing directory where you want to save the confidence curve family. Default is "".
 #' @param min.effect The minimally clinically interesting effect (meaningful benefit). Default is -0.05.
-#' @param dir.min.effect Direction (0 or 1) around the min effect that you're interested in. 0: less than min effect value; 1: more than min effect value. Default assumes LACK of meaningful benefit.
+#' @param dir.min.effect Direction (0 or 1) around the min effect that you are interested in. 0: less than min effect value; 1: more than min effect value. Default assumes LACK of meaningful benefit.
 #' @param equiv If interested in expressing confidence in treatment equivalence, you can specify
 #'  two numbers as c(a,b) to bound the equivalency region. Default uses min.effect and -min.effect as a and b
 #' @param show On the confidence density function, which region to display in shaded blue: BENEFIT' (default), 'LMB' (lack of meaningful benefit),
 #' 'MB' (meaningful benefit) or 'EQUIV' (equivalence).
-#' @param save.plot save the plot as png to directory, TRUE or FALSE (default).
+#' @param save.plot Save the plot as png to directory, TRUE or FALSE (default).
 #' @param return.plot Return the plots from the function, TRUE or FALSE (default).
-#' @param estimator.type when entering binary data into inputs, specify "risk difference" or "odds ratio". For "odds ratio" option, the log odds with be used.
-#' @param pval Specify "ONE-SIDED" or "TWO_SIDED" test for returned p-value. Default is "TWO-SIDED".
-#' @param tag phrase to append to the image filename as <directory>/confidence_curves_<tag>.png. Default is "".
+#' @param estimator.type When entering binary data into inputs, specify "risk difference", "risk ratio", or "odds ratio". For "odds ratio" or "risk ratio" options, the log value will be used.
+#' @param pval Specify "ONE-SIDED" or "TWO-SIDED" test for returned p-value. Default is "TWO-SIDED".
+#' @param tag Phrase to append to the image filename as <directory>/confidence_curves_<tag>.png. Default is "".
 #' @importFrom rlang .data
-#' @return Returns a list of values associated with confidence analysis (under $text) and (if supplied TRUE to return.plot) four confidence curves
+#' @return Returns a list of values associated with confidence analysis (under $text) and (if supplied TRUE to return.plot) four confidence curves.
 #' @export
 #' @examples
 #' makeConfidenceCurves(
@@ -83,26 +83,34 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
     # CALCUATE TREATMENT EFFECT ESTIMATOR
     # ##############################################
     sample.size = num.ctrl + num.trmt
+    a = num.resp.ctrl
+    b = num.resp.trmt
+    c = num.ctrl - num.resp.ctrl
+    d = num.trmt - num.resp.trmt
 
+    # if none specified use odds ratio as default
     if (!typeof(estimator.type) == "character"){
-      stop("Enter estimator type (odds ratio, risk difference)")
-    } else if (
+      print("No estimator type specified. Using log odds ratio.")
+      estimator.type = 'odds ratio'
+    }
+
+    if (
       tolower(estimator.type) == 'odds ratio'|
       grepl("odds",tolower(estimator.type))){
+
       estimator.type = "Log Odds Ratio"
-      a = num.resp.ctrl
-      b = num.resp.trmt
-      c = num.ctrl - num.resp.ctrl
-      d = num.trmt - num.resp.trmt
+
+      # Equations after Marschner (2024)
       theta.estimator = log((a*d)/(b*c))
-      # standard error after Marschner (2024)
       standard.error = sqrt(((1/a) + (1/b) + (1/c) + (1/d)))
+
       # variance
       treat.var = (standard.error**2) * sample.size
       } else if (
         tolower(estimator.type) == "risk difference" |
         (grepl("risk", tolower(estimator.type)) &
          grepl("diff", tolower(estimator.type)))){
+
         estimator.type = "Risk Difference"
         crisk = num.resp.ctrl/num.ctrl
         trisk = num.resp.trmt/num.trmt
@@ -116,8 +124,24 @@ makeConfidenceCurves <- function(theta.estimator=NULL,
         standard.error = sqrt(treat.var / sample.size)
 
         theta.estimator = risk_diff
-      } else {
-      stop("Enter risk difference or odds ratio for estimator type.")
+      } else if (
+        tolower(estimator.type) == "risk ratio" |
+        tolower(estimator.type) == "relative risk" |
+        (grepl("risk", tolower(estimator.type)) &
+         grepl("ratio", tolower(estimator.type))) |
+        (grepl("rel", tolower(estimator.type)) &
+         grepl("risk", tolower(estimator.type)))
+      ){
+        estimator.type = "Log Risk Ratio"
+
+        # Equations after Marschner (2024)
+        theta.estimator = log((a*(b + d))/(b*(a + c)))
+        standard.error = sqrt(((1/a) + (1/b) - (1/(a + c)) - (1/(b + d))))
+
+        # variance
+        treat.var = (standard.error**2) * sample.size
+        } else {
+      stop("Estimator type must be one of 'risk difference', 'risk ratio' or 'odds ratio'.")
       }
   }
 
@@ -746,11 +770,11 @@ testConfidenceCurves <- function(num.ctrl=50,
   for (i in vary.lmb){
     for (j in vary.trmt){
       for (k in vary.ctrl){
-      list.out <- confidenceCurves::makeConfidenceCurves(num.resp.ctrl = k,
+      list.out <- makeConfidenceCurves(num.resp.ctrl = k,
                                        num.resp.trmt = j,
                                        num.ctrl = num.ctrl,
                                        num.trmt = num.trmt,
-                                       estimator.type = 'odds ratio',
+                                       estimator.type = estimate.type,
                                        min.effect = i,
                                        directory = directory,
                                        pval = 'ONE-SIDED',
